@@ -1,0 +1,9 @@
+[project]
+name = "gaze-attribution-pipeline"
+version = "0.1.0"
+description = "Reproducible extraction from post-processed gaze trials"
+requires-python = ">=3.12,<3.13"
+dependencies = ["numpy==2.3.5", "pandas==3.0.1", "openpyxl==3.1.5"]
+
+[tool.uv]
+package = false

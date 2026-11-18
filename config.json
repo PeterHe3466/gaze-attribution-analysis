@@ -1,0 +1,79 @@
+{
+  "_description": "Edit the parameter values directly. Fields beginning with _description explain settings and do not affect calculations. Set input, order-reference and output paths at the top of main.py.",
+  "schema_version": 1,
+  "_description_schema_version": "Configuration format version. Keep this at 1.",
+  "selection": {
+    "ages_months": [8, 12],
+    "_description_ages_months": "Age directories to process. For example, [8, 12] selects 8mo_data_pre and 12mo_data_pre.",
+    "participants": [],
+    "_description_participants": "An empty list selects all participants in the selected age directories. To select individuals, use complete IDs such as [\"8mo_P001\", \"12mo_P001\"]."
+  },
+  "analyses": ["looking_time", "spatial_roi", "proportions"],
+  "_description_analyses": "looking_time extracts whole-screen first/total looking time; spatial_roi extracts left/right track dwell; proportions calculates both denominator versions. Later modules automatically run their prerequisites.",
+  "rules": {
+    "validation_start_ms": 7000,
+    "_description_validation_start_ms": "Inclusive validation-window start in milliseconds. 7000 means 7 seconds.",
+    "validation_end_ms": 10000,
+    "_description_validation_end_ms": "Inclusive validation-window end in milliseconds. The validity denominator is the number of actually observed frames in this window.",
+    "validation_threshold": 0.5,
+    "_description_validation_threshold": "Minimum cleaned looking-frame proportion required to pass validation. 0.5 means 50%; equality passes.",
+    "measurement_start_ms": 13000,
+    "_description_measurement_start_ms": "Inclusive looking-time measurement start in milliseconds. 13000 means 13 seconds.",
+    "measurement_end_ms": null,
+    "_description_measurement_end_ms": "null means no fixed upper cap: measure until the nonlooking rule triggers or the recording ends. A numeric value sets an inclusive timestamp cap in milliseconds.",
+    "minimum_segment_ms": 400,
+    "_description_minimum_segment_ms": "Historical state-switch confirmation and accepted looking-segment duration threshold in milliseconds. Short state changes may be bridged.",
+    "terminate_nonlooking_ms": 2000,
+    "_description_terminate_nonlooking_ms": "Continuous whole-screen nonlooking duration that stops total-looking measurement, in milliseconds. Delayed-termination auditing uses the observed trigger time of this rule.",
+    "first_look_grace_ms": 2000,
+    "_description_first_look_grace_ms": "Historical first-look initial grace rule in milliseconds. Nonlooking onsets at or before measurement_start_ms plus this value use this termination threshold; later onsets use minimum_segment_ms.",
+    "missing_gap_max_frames": 2,
+    "_description_missing_gap_max_frames": "Maximum missing-looking flag gap to repair when surrounded by looking: 0, 1 or 2 frames. Observed outside-ROI points are never repaired as missing. Measured pupil diameters and coordinates are not modified.",
+    "screen_roi": {
+      "_description": "Whole-screen validity ROI in normalized screen coordinates, including display borders: top-left (0,0), bottom-right (1,1). All four boundaries are inclusive. Used for validation and whole-screen looking.",
+      "x_min": 0.06,
+      "_description_x_min": "Left boundary of the whole-screen ROI.",
+      "x_max": 0.94,
+      "_description_x_max": "Right boundary of the whole-screen ROI.",
+      "y_min": 0.03,
+      "_description_y_min": "Top boundary of the whole-screen ROI.",
+      "y_max": 0.97,
+      "_description_y_max": "Bottom boundary of the whole-screen ROI."
+    },
+    "track_rois": {
+      "_description": "Accumulate track dwell only within accepted whole-screen looking segments. Track switching does not terminate the trial. No separate 400 ms minimum track visit is applied.",
+      "left": {
+        "_description": "Left track. The shared X=.5 edge belongs to the right track to avoid double counting.",
+        "x_min": 0.077,
+        "_description_x_min": "Inclusive left boundary of the left track.",
+        "x_max": 0.5,
+        "_description_x_max": "Right boundary of the left track; inclusion is controlled by x_max_inclusive.",
+        "y_min": 0.65,
+        "_description_y_min": "Inclusive top boundary of the left track.",
+        "y_max": 0.97,
+        "_description_y_max": "Inclusive bottom boundary of the left track.",
+        "x_max_inclusive": false,
+        "_description_x_max_inclusive": "false excludes the right boundary; X=.5 is assigned to the right track."
+      },
+      "right": {
+        "_description": "Right track. Lower bounds and the upper Y bound are inclusive.",
+        "x_min": 0.5,
+        "_description_x_min": "Inclusive left boundary of the right track.",
+        "x_max": 0.923,
+        "_description_x_max": "Right boundary of the right track.",
+        "y_min": 0.65,
+        "_description_y_min": "Inclusive top boundary of the right track.",
+        "y_max": 0.97,
+        "_description_y_max": "Inclusive bottom boundary of the right track.",
+        "x_max_inclusive": true,
+        "_description_x_max_inclusive": "true includes the right boundary."
+      }
+    },
+    "test_pairs": [[1, 2], [3, 4]],
+    "_description_test_pairs": "Test1-2 form Pair 1 and Test3-4 form Pair 2. Only this design is supported. Both New and Old events must be valid; an incomplete first pair cannot be bypassed to use the second.",
+    "condition_labels": {"Con": "CON", "Int": "INC"},
+    "_description_condition_labels": "Map Con/Int in inputs and the order reference to CON/INC output labels.",
+    "proportion_denominators": ["roi_total", "screen_total"],
+    "_description_proportion_denominators": "roi_total divides ball/empty-location time by the sum of both track times; screen_total divides by accepted whole-screen total looking. Compute trial proportions before averaging the same event across complete valid pairs. Zero denominators yield missing proportions; true zero remains zero, log10(0) stays blank, and no pseudocount is added."
+  }
+}

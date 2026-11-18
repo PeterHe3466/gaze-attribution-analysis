@@ -1,0 +1,14 @@
+[
+  {
+    "file": "Codex\\2026-11-04_gaze_extraction_ROI\\audit\\source_scripts\\5_LT_extraction.py",
+    "sha256": "d11386a4acc0a4784475c9811e33e2837b8bef4a013d49076033623ad858fbb3",
+    "function": "process_totalLT",
+    "source_line": 88
+  },
+  {
+    "file": "Codex\\2026-11-04_gaze_extraction_ROI\\audit\\source_scripts\\6_firstLook_extraction.py",
+    "sha256": "3b0bf08b3aa9662a42b194e6c5d01a063924ca216dedda673efc56717a125aa4",
+    "function": "process_firstLook",
+    "source_line": 79
+  }
+]

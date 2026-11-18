@@ -1,0 +1,41 @@
+{
+  "note": "Reference sources inspected during migration; not runtime dependencies. Paths are relative to the original Demo Gaze attribution directory.",
+  "sources": [
+    {
+      "path": "data_preparation_and_extraction/1_merge_separate_trials.py",
+      "sha256": "e2320ae4688c0a5a9442896f8a2ecd1e39d06ef2ab0b9afa469de6c0547065b4"
+    },
+    {
+      "path": "data_preparation_and_extraction/3_merge_all.py",
+      "sha256": "06be1f7e425b71b9ae8daeae8ab4fbe0ab68147ea4b9cbc23decfac238a7325b"
+    },
+    {
+      "path": "data_preparation_and_extraction/5_LT_extraction.py",
+      "sha256": "d11386a4acc0a4784475c9811e33e2837b8bef4a013d49076033623ad858fbb3"
+    },
+    {
+      "path": "data_preparation_and_extraction/6_firstLook_extraction.py",
+      "sha256": "3b0bf08b3aa9662a42b194e6c5d01a063924ca216dedda673efc56717a125aa4"
+    },
+    {
+      "path": "Codex/2026-11-04_gaze_extraction_ROI/extract_gaze.py",
+      "sha256": "5f575922bae671b3c5879a72dd6f82b82b46f319753fbe038196126baaebe2d9"
+    },
+    {
+      "path": "Codex/2026-11-04_gaze_extraction_ROI/roi_gaze.py",
+      "sha256": "c82411d96c8b470f8de45449cdf93f5dffb12ad9b0ba54aa7e4861326f9b9b03"
+    },
+    {
+      "path": "Codex/2026-11-04_spatial_roi/extract_track_roi.py",
+      "sha256": "e8c162d1f5efb5779857b784569f5081fea7d00801cfc326f8b3259b0a769d27"
+    },
+    {
+      "path": "Codex/2026-11-05_spatial_proportion/analyze_proportion.py",
+      "sha256": "e62f09a5996da94ec3228adbc6acaa768cfeb084b9a2f40db64396041e3bb172"
+    },
+    {
+      "path": "Codex/2026-11-04_spatial_roi/results/approved_roi_parameters.json",
+      "sha256": "e4b026f64f37d47d744aba51c76a21602b468479177952962f644844b4074aa9"
+    }
+  ]
+}
