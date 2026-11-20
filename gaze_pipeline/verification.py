@@ -6,7 +6,8 @@ import pandas as pd
 from .common import require
 
 
-def verify_results(looking_trials, looking_people, spatial_trials, spatial_people, proportions):
+def verify_results(looking_trials, looking_people, spatial_trials=None, spatial_people=None, proportions=None):
+    proportions = {} if proportions is None else proportions
     require(looking_people.participant_id.is_unique, 'Duplicate participant results')
     require(len(looking_trials) == 4*len(looking_people), 'Expected four trial slots per participant')
     for metric in ['first', 'total']:
@@ -39,6 +40,42 @@ def verify_results(looking_trials, looking_people, spatial_trials, spatial_peopl
         checks[name+'_pair_counts'] = {str(int(k)): int(v) for k, v in table.proportion_valid_pair_count.value_counts().sort_index().items()}
     checks['result_invariants_passed'] = True
     return checks
+
+
+def verify_pair_results(trials, people, pair_people):
+    """Check separate pair values against trial durations and existing pair means."""
+    require(pair_people.participant_id.is_unique, 'Duplicate pair-export participants')
+    require(set(pair_people.participant_id) == set(people.participant_id),
+            'Pair-export participants differ from looking-time participants')
+    paired = pair_people.set_index('participant_id')
+    for person in people.to_dict('records'):
+        result = paired.loc[person['participant_id']]
+        block = trials[trials.participant_id.eq(person['participant_id'])]
+        for metric in ['first', 'total']:
+            for event in ['New', 'Old']:
+                values = []
+                for number in [1, 2]:
+                    trial = block[block.pair_number.eq(number) & block.event.eq(event)]
+                    require(len(trial) == 1, 'Ambiguous pair/event in verification')
+                    kept = bool(trial[f'{metric}_pair_retained'].iloc[0])
+                    require(result[f'pair{number}_{metric}_retained'] == int(kept),
+                            'Pair-export retention differs from trial retention')
+                    expected = float(trial[f'{metric}_s'].iloc[0]) if kept else np.nan
+                    actual = result[f'pair{number}_{event.lower()}_{metric}_s']
+                    require(np.isclose(actual, expected, atol=1e-9, rtol=0, equal_nan=True),
+                            'Pair-export duration differs from trial duration')
+                    expected_log = np.log10(expected) if np.isfinite(expected) and expected > 0 else np.nan
+                    require(np.isclose(result[f'pair{number}_log10_{metric}_{event.lower()}'],
+                                       expected_log, atol=1e-9, rtol=0, equal_nan=True),
+                            'Pair-export log10 differs from duration')
+                    if np.isfinite(actual):
+                        values.append(actual)
+                average = float(np.mean(values)) if values else np.nan
+                require(np.isclose(average, person[f'{event.lower()}_{metric}_s'],
+                                   atol=1e-9, rtol=0, equal_nan=True),
+                        'Separate pairs do not reproduce the existing looking-time mean')
+    return dict(participants=len(people), pairs_per_participant=2,
+                trial_values_match=True, retained_pair_means_match=True, passed=True)
 
 
 def compare_table(actual, reference_path, keys, ignored=(), normalize_condition=False):
@@ -76,7 +113,8 @@ def compare_table(actual, reference_path, keys, ignored=(), normalize_condition=
                 new_rows_without_historical_reference=new_count, maximum_absolute_error=max_error, absolute_tolerance=1e-9, passed=True)
 
 
-def verify_reference(reference_root, looking_trials, looking_people, spatial_trials, spatial_people, proportions):
+def verify_reference(reference_root, looking_trials, looking_people, spatial_trials=None, spatial_people=None, proportions=None):
+    proportions = {} if proportions is None else proportions
     root = Path(reference_root)
     comparisons = {'looking_participants': compare_table(looking_people, root/'2026-11-04_gaze_extraction_ROI/Looking_Time_JASP_ROI_2026-11-04.csv', ['participant_id'], normalize_condition=True)}
     # Compare scientific trial outputs; old absolute paths and richer diagnostic fields are not inputs.

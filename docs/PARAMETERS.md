@@ -14,7 +14,7 @@ All times below are milliseconds unless a column name ends in `_s`. Gaze positio
 | `main.py: OUTPUT_DIR` | absolute `Analysis output` path | Latest CSV/audit at top level; complete run snapshots in `details/` |
 | `selection.ages_months` | `[8,12]` | Age directories to search |
 | `selection.participants` | `[]` | Empty means all; otherwise full IDs such as `8mo_P001` |
-| `analyses` | all three | Requested extraction modules; prerequisites run automatically |
+| `analyses` | looking_time, pair_looking_time | Existing across-pair means plus separate pair exports; looking_time is the prerequisite |
 | `validation_start_ms` / `validation_end_ms` | 7000 / 10000 | Inclusive validation window; denominator is actual observed rows in this window |
 | `validation_threshold` | 0.5 | Minimum cleaned looking-flag proportion; equality passes |
 | `measurement_start_ms` | 13000 | Inclusive start of looking-time measurement |
@@ -24,13 +24,15 @@ All times below are milliseconds unless a column name ends in `_s`. Gaze positio
 | `first_look_grace_ms` | 2000 | Historical first-look initial-grace rule; see below |
 | `missing_gap_max_frames` | 2 | Supported values 0, 1 or 2; repair short missing-looking flags surrounded by looking, never observed outside-screen points |
 | `screen_roi` | X .06–.94, Y .03–.97 | Inclusive whole-screen valid region, used in both validation and measurement |
-| `track_rois.left` | X .077–.5, Y .65–.97 | Left track; X maximum excluded |
-| `track_rois.right` | X .5–.923, Y .65–.97 | Right track; X maximum included |
+| `track_rois.left` | X .077–.5, Y .65–.97 | Deferred setting, unused by main.py; left track X maximum excluded |
+| `track_rois.right` | X .5–.923, Y .65–.97 | Deferred setting, unused by main.py; right track X maximum included |
 | `test_pairs` | `[[1,2],[3,4]]` | Only this reviewed two-pair design is supported by version 0.1 |
 | `condition_labels` | Con→CON, Int→INC | Display labels for output tables; reference matching uses original values |
-| `proportion_denominators` | roi_total, screen_total | Which proportion versions to calculate |
+| `proportion_denominators` | roi_total, screen_total | Deferred setting, unused by main.py |
 
 ROI keys `x_min`, `x_max`, `y_min`, `y_max` are coordinate bounds. Track `x_max_inclusive` controls ownership of the right edge; all lower edges and Y upper edges are included. The shared X=.5 edge belongs to the right track only. Overlapping track ROIs are rejected.
+
+The active entry point runs only whole-screen looking time and optional separate-pair exports. Track ROI and proportion source files/settings are preserved for later work, and configuration validation still checks their structure, but main.py does not execute these analyses. The whole-screen ROI is still required for looking-time validity. Conventions 9-14 below document the deferred modules.
 
 ## Preserved methodological conventions
 
@@ -50,6 +52,7 @@ These conventions are deliberate code behavior, not interchangeable parameter ch
 12. `roi_total`: ball or empty-location seconds divided by their sum within that trial. `screen_total`: ball or empty-location seconds divided by accepted whole-screen total seconds within that trial.
 13. Compute each trial's ratio **before** averaging retained same-event trials. A zero denominator makes a ratio unavailable; complete-pair prefix rules are applied again for proportions. Time-based pair counts remain unchanged and proportion-based counts are recorded separately.
 14. Zero ratios and zero track times remain zero in raw columns; their log10 columns are blank. No pseudocount is added. Missing values are never filled with zero.
+15. Separate-pair exports reuse the existing trial durations and first/total pair-retention flags. They introduce no timing or exclusion rule. An unavailable pair has missing New/Old outcomes for that metric, even if an individual trial has a valid duration. The original event-specific across-pair means must equal the means of the exported retained pair values.
 
 ## Column naming
 
@@ -59,6 +62,9 @@ These conventions are deliberate code behavior, not interchangeable parameter ch
 | `log10_first_new`, etc. | Log10 of the corresponding positive participant mean |
 | `first_pairs_retained`, `total_pairs_retained` | Metric-specific pair counts |
 | `pair1_valid`, `pair2_valid`, `valid_pair_count` | Total-looking pair eligibility/count |
+| `pair1_new_first_s`, `pair2_old_total_s`, etc. | Separate pair whole-screen seconds for the New/Old reveal event |
+| `pair1_log10_first_new`, `pair2_log10_total_old`, etc. | Log10 of the corresponding positive separate-pair duration |
+| `pair1_first_retained`, `pair2_total_retained`, etc. | Separate pair eligibility for each metric, 1 or 0 |
 | `spatial_pair1_eventNew_oldloc_s` | Pair 1, New event, dwell at old location in seconds |
 | `spatial_totalpairs_eventOld_newloc_log10` | Log10 of mean new-location dwell during Old events across retained pairs |
 | `prop_roi_total_pair1_newgoal_ball_prop` | New event, ball location, track-total denominator, Pair 1 |
@@ -66,4 +72,4 @@ These conventions are deliberate code behavior, not interchangeable parameter ch
 | `prop_*_proportion_valid_pair_count` | Pair count available for that denominator's proportions |
 | `prop_*_*_s` and `prop_*_*_log10` | Preserved time-based values, whose pair set may differ from ratio eligibility |
 
-The combined CSV prefixes component columns to avoid collisions; component participant CSVs retain shorter legacy-compatible names. `column_dictionary.json` supplies the exact columns of each run. The verification report distinguishes structural/invariant checks from comparisons against historical outputs; neither proves that a scientific rule is the correct choice for the research question.
+The current combined CSV contains the whole-screen columns and selected separate-pair columns. The `spatial_*` and `prop_*` naming patterns above describe deferred analyses and older snapshots. `column_dictionary.json` supplies the exact columns and source module of each run. The verification report distinguishes structural/invariant checks from historical comparisons; neither proves that a scientific rule is the correct choice for the research question.

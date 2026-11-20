@@ -53,9 +53,11 @@ A recording that ends before the whole-screen nonlooking rule is observed is fla
 
 ## Current extraction scope
 
-The pipeline extracts Test-phase whole-screen first/total looking time, left/right track dwell and proportions with two denominators. Fami files verify stimulus order. Pupil-change analysis, laboratory Pupillo preprocessing, inferential tests and plotting remain outside this extraction entry point.
+The pipeline extracts Test-phase whole-screen first/total looking time. `looking_time.py` supplies the existing across-pair averages; `pair_looking_time.py` also exports Pair 1 and Pair 2 separately. Fami files verify stimulus order. Track ROI and proportion modules are retained for later work but disconnected from `main.py`; pupil-change analysis, laboratory Pupillo preprocessing, inferential tests and plotting also remain outside this entry point.
 
-The reviewed whole-screen ROI and v2 track ROIs are retained. The stopped border-correction draft is not used. Checks cover zero versus missing values, sequential complete-pair retention, and averaging proportions after calculating them within each trial.
+`config.json` selects `looking_time` and `pair_looking_time` by default. The main CSV includes columns such as `pair1_new_total_s` and `pair2_old_first_s`, plus log10 values and metric-specific retention flags. Each run's details directory also contains `pair_looking_time_participants.csv` and `pair_looking_time_pairs.csv` (one row per participant/pair).
+
+The whole-screen ROI, timing, validation and pair rules remain unchanged. Pair 1 = Test1-2 and Pair 2 = Test3-4. An incomplete first pair still prevents using the second; first and total looking use their own retention decisions. Unretained pair outcomes stay missing. Deferred track ROI/proportion settings remain documented in the configuration but are not used in the current run.
 
 ## Version control
 

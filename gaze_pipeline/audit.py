@@ -142,12 +142,16 @@ def write_audit(trials, people, proportions, config, record, checks, output):
         ['First-look initial grace', f'{rules["first_look_grace_ms"]} ms'],
         ['Maximum repaired missing gap', f'{rules["missing_gap_max_frames"]} frames'],
         ['Whole-screen ROI', json.dumps(rules['screen_roi'])],
-        ['Left track ROI', json.dumps(rules['track_rois']['left'])],
-        ['Right track ROI', json.dumps(rules['track_rois']['right'])],
         ['Pairing', f'{rules["test_pairs"]}; retain the chronological complete-pair prefix'],
-        ['Condition labels', json.dumps(rules['condition_labels'])],
-        ['Proportion denominators', ', '.join(rules['proportion_denominators'])+'; compute trial proportions before averaging the same event']]
+        ['Condition labels', json.dumps(rules['condition_labels'])]]
+    if 'spatial_roi' in record['executed_analyses']:
+        parameters += [['Left track ROI', json.dumps(rules['track_rois']['left'])],
+                       ['Right track ROI', json.dumps(rules['track_rois']['right'])]]
+    if proportions:
+        parameters.append(['Proportion denominators', ', '.join(rules['proportion_denominators'])+'; compute trial proportions before averaging the same event'])
     lines += _table(['Parameter', 'Actual value'], parameters)
+    if 'pair_looking_time' in record['executed_analyses']:
+        lines += ['', 'Pair 1 and Pair 2 are exported separately using the existing first/total trial durations and pair-retention flags. Unretained pairs remain missing; Pair 2 cannot bypass an incomplete Pair 1.']
     lines += ['', f'Input: `{config["paths"]["data_root"]}`', f'Order reference: `{config["paths"]["order_file"]}`',
               f'Output: `{config["paths"]["output_root"]}`', '', '## 2. Samples, missingness and exclusions', '',
               f'**{p["recorded"]} participants** recorded. First-looking outcomes available for {p["first_retained"]}; '

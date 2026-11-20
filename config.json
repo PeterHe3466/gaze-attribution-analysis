@@ -8,8 +8,8 @@
     "participants": [],
     "_description_participants": "An empty list selects all participants in the selected age directories. To select individuals, use complete IDs such as [\"8mo_P001\", \"12mo_P001\"]."
   },
-  "analyses": ["looking_time", "spatial_roi", "proportions"],
-  "_description_analyses": "looking_time extracts whole-screen first/total looking time; spatial_roi extracts left/right track dwell; proportions calculates both denominator versions. Later modules automatically run their prerequisites.",
+  "analyses": ["looking_time", "pair_looking_time"],
+  "_description_analyses": "looking_time extracts whole-screen first/total looking time averaged across retained pairs; pair_looking_time also exports Pair 1 and Pair 2 separately using the same trial durations and metric-specific pair-retention rules. Selecting pair_looking_time automatically runs looking_time. Track ROI and proportion modules are deferred and cannot be selected in main.py.",
   "rules": {
     "validation_start_ms": 7000,
     "_description_validation_start_ms": "Inclusive validation-window start in milliseconds. 7000 means 7 seconds.",
@@ -41,7 +41,7 @@
       "_description_y_max": "Bottom boundary of the whole-screen ROI."
     },
     "track_rois": {
-      "_description": "Accumulate track dwell only within accepted whole-screen looking segments. Track switching does not terminate the trial. No separate 400 ms minimum track visit is applied.",
+      "_description": "Deferred track ROI settings, preserved for later work and not used by main.py. The retained spatial_roi.py module accumulates track dwell only within accepted whole-screen looking segments. Track switching does not terminate the trial. No separate 400 ms minimum track visit is applied.",
       "left": {
         "_description": "Left track. The shared X=.5 edge belongs to the right track to avoid double counting.",
         "x_min": 0.077,
@@ -74,6 +74,6 @@
     "condition_labels": {"Con": "CON", "Int": "INC"},
     "_description_condition_labels": "Map Con/Int in inputs and the order reference to CON/INC output labels.",
     "proportion_denominators": ["roi_total", "screen_total"],
-    "_description_proportion_denominators": "roi_total divides ball/empty-location time by the sum of both track times; screen_total divides by accepted whole-screen total looking. Compute trial proportions before averaging the same event across complete valid pairs. Zero denominators yield missing proportions; true zero remains zero, log10(0) stays blank, and no pseudocount is added."
+    "_description_proportion_denominators": "Deferred proportion settings, preserved for later work and not used by main.py. roi_total divides ball/empty-location time by the sum of both track times; screen_total divides by accepted whole-screen total looking. Compute trial proportions before averaging the same event across complete valid pairs. Zero denominators yield missing proportions; true zero remains zero, log10(0) stays blank, and no pseudocount is added."
   }
 }

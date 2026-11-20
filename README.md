@@ -2,7 +2,7 @@
 
 This project converts **post-processed, per-trial gaze CSVs** into analysis-ready participant tables. Its single entry point is `main.py`.
 
-The current version extracts Test-phase first/total whole-screen looking time, left/right track dwell time, and proportions using both track-total and whole-screen denominators. Pupillo export, developer-provided pupil filtering, pupil-change analysis, inferential statistics and plotting are outside this version's processing scope. Familiarization files are used to verify stimulus order, not to extract familiarization outcomes.
+The current entry point extracts Test-phase first/total whole-screen looking time, both averaged across retained pairs and separately for Pair 1 and Pair 2. Track ROI dwell and proportion analyses are deferred: their source files and settings are retained, but `main.py` does not import, execute or merge their results. Pupillo export, developer-provided pupil filtering, pupil-change analysis, inferential statistics and plotting remain outside this entry point. Familiarization files verify stimulus order, not familiarization outcomes.
 
 For a short introduction, see [START_HERE.md](START_HERE.md).
 
@@ -64,14 +64,28 @@ Required Test CSV columns: `frame_no`, `frame_time` (milliseconds), `filtered_ga
 | `gaze_pipeline/quality.py` | Whole-screen frame validity and short missing-gap flag repair |
 | `gaze_pipeline/timing.py` | Historical first/total looking-time state machines |
 | `gaze_pipeline/looking_time.py` | Trial extraction and chronological complete-pair aggregation |
-| `gaze_pipeline/spatial_roi.py` | Allocate accepted screen-looking intervals to track ROIs |
-| `gaze_pipeline/proportions.py` | Trial-level proportions and participant aggregation |
+| `gaze_pipeline/pair_looking_time.py` | Export Pair 1 and Pair 2 separately from existing trial durations and retention flags |
+| `gaze_pipeline/spatial_roi.py` | Deferred track ROI module, retained but disconnected from `main.py` |
+| `gaze_pipeline/proportions.py` | Deferred proportion module, retained but disconnected from `main.py` |
 | `gaze_pipeline/provenance.py` | Code/data hashes, Git state and environment records |
 | `gaze_pipeline/verification.py` | Result invariants and optional historical comparison |
 | `gaze_pipeline/audit.py` | Concise parameters/sample/exclusion/termination audit |
 | `docs/PARAMETERS.md` | Optional supplement on fixed methodological conventions |
 
-The dependencies are `looking_time → spatial_roi → proportions`. Selecting a later module automatically runs its prerequisites. To add an analysis, add a module, register/call it and merge its uniquely named outputs in `main.py`, and select it in a configuration. Avoid editing existing extraction modules unless intentionally changing their behavior.
+The active dependency is `looking_time → pair_looking_time`. `config.json` selects both by default; selecting only `pair_looking_time` still runs its looking-time prerequisite. Selecting only `looking_time` exports the existing averages without separate-pair columns. Track ROI and proportion names are no longer accepted by this entry point. Their saved settings are not applied to the active extraction. The whole-screen validity ROI remains part of the established looking-time rules.
+
+To add an analysis, add a module, register/call it and merge its uniquely named outputs in `main.py`, and select it in a configuration. Avoid editing existing extraction modules unless intentionally changing their behavior.
+
+## Separate pair outcomes
+
+Pair 1 contains Test1-2; Pair 2 contains Test3-4. The new module reuses `looking_time_trials.csv`; it does not recalculate or change trial timing, validation or exclusion rules. New and Old identify the reveal **event**, not a left/right ROI.
+
+- `pair1_new_first_s`, `pair1_old_first_s`, `pair1_new_total_s`, `pair1_old_total_s`: Pair 1 outcomes in seconds.
+- The corresponding `pair2_*` columns: Pair 2 outcomes in seconds.
+- `pair1_log10_first_new`, `pair2_log10_total_old`, etc.: log10 of the corresponding positive duration.
+- `pair1_first_retained`, `pair1_total_retained`, and the Pair 2 equivalents: metric-specific eligibility, 1 or 0.
+
+Both New and Old trials must qualify for a metric. An unretained pair has missing outcomes, not zeros. An incomplete Pair 1 cannot be bypassed to retain Pair 2. First and total looking retain their own pair sets. The existing across-pair means stay in the combined CSV and are checked against the means of the separate pair values.
 
 ## Outputs and audit records
 
@@ -90,19 +104,21 @@ Analysis output/
 
 The two top-level files are updated after a successful run. Complete per-run snapshots remain in `details/`; failed runs do not publish a new top-level result.
 
-- `analysis_ready.csv`: the combined participant table, one row per selected participant. It currently has 146 columns with all three analyses and both denominators enabled.
+- `analysis_ready.csv`: the combined participant table, one row per selected participant, with the existing whole-screen averages and the selected separate-pair columns. Current runs contain no track ROI or proportion columns; older complete runs remain in `details/`.
 - `audit.md`: actual parameters, participant/trial/pair inclusion and missingness, and IDs/trials with possible early or delayed recording ends. Possible early means the recording ended before the nonlooking stop rule was observed; it is a review flag, not a confirmed button press or new exclusion.
 
 Within each `details/<run ID>/` snapshot:
 
-- `looking_time_*`, `spatial_roi_*`, `proportions_*`: component tables, including trial-level decisions.
+- `looking_time_trials.csv`, `looking_time_participants.csv`: existing trial decisions and participant averages.
+- `pair_looking_time_participants.csv`: separate pair outcomes in participant-wide format.
+- `pair_looking_time_pairs.csv`: one row per participant and pair, including missing outcomes and retention reasons; both pair slots are always represented.
 - `termination_trials.csv`, `excluded_or_missing_trials.csv`, `sample_status.csv`, `audit_summary.json`: detailed audit records.
 - `column_dictionary.json`: column name, type and source module; see `docs/PARAMETERS.md` for naming and scientific meaning.
 - `config_requested.json` and `config_resolved.json`: the exact requested settings and resolved input/output paths.
 - `input_manifest.json`, `code_manifest.json`: input and source SHA-256 checksums.
 - `run_record.json`: success/failure, invocation, Python/package/platform versions, Git commit and dirty status, and output hashes.
 - `verification.json`: completed checks; historical comparisons appear only when explicitly requested.
-- `accepted_screen_looking_segments.csv`, compressed frame assignments, and first/total segment logs: detailed extraction records.
+- `total_looking_segments.log`, `first_looking_segments.log`: detailed timing records.
 
 Only runs with `run_record.json` reporting `status: success` are complete. A failed run's partial tables are diagnostic artifacts. A parameter-description document explains a rule; the run record and saved configuration establish which rule was actually used.
 
@@ -118,7 +134,7 @@ For the original configuration, optionally compare with the existing dated resul
 uv run --frozen --cache-dir .uv-cache python main.py --reference-root ../Codex
 ```
 
-This comparison is for refactor verification, not a permanent dependency. Current inputs contain 58 participants; the historical tables contain 53. Historical checks cover overlapping participants only and explicitly count additional rows without a historical reference. All current participants undergo the pipeline's input and result checks. If changing scientific parameters, do not expect the historical result comparison to pass.
+This comparison checks the existing whole-screen participant/trial outputs; deferred track ROI and proportion results are not compared by `main.py`. It is for refactor verification, not a permanent dependency. Current inputs contain 58 participants; the historical tables contain 53. Historical checks cover overlapping participants only and explicitly count additional rows without a historical reference. All current participants undergo input and result checks, including agreement between pair exports, trial values and the existing across-pair means. If changing scientific parameters, do not expect historical comparisons to pass.
 
 ## Sharing and preservation
 

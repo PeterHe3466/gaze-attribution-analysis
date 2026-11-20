@@ -20,7 +20,7 @@ ORDER_FILE = INPUT_DIR / 'Gaze-Order.xlsx'
 OUTPUT_DIR = Path(r"C:\Users\Peter\Documents\Syncthing Folder\Peter's Folder\KU course\ReproducibleQuantitativeDataAnalysis-2026\Demo Gaze attribution\Analysis output")
 # Analysis rules and their descriptions are in config.json beside this file.
 
-SUPPORTED_ANALYSES = {'looking_time', 'spatial_roi', 'proportions'}
+SUPPORTED_ANALYSES = {'looking_time', 'pair_looking_time'}
 
 
 def publish_primary_files(snapshot, output_root):
@@ -49,9 +49,8 @@ def main():
     from gaze_pipeline.inputs import discover_inputs
     import pandas as pd
     from gaze_pipeline.looking_time import extract_looking_time
-    from gaze_pipeline.spatial_roi import extract_spatial
-    from gaze_pipeline.proportions import extract_proportions, META
-    from gaze_pipeline.verification import verify_results, verify_reference
+    from gaze_pipeline.pair_looking_time import extract_pair_looking_time, METADATA
+    from gaze_pipeline.verification import verify_results, verify_reference, verify_pair_results
     from gaze_pipeline.audit import write_audit
 
     root = Path(config['paths']['output_root'])
@@ -61,10 +60,8 @@ def main():
     output.mkdir(parents=True, exist_ok=False)
     requested = config['analyses']
     executed = ['looking_time']
-    if set(requested) & {'spatial_roi', 'proportions'}:
-        executed.append('spatial_roi')
-    if 'proportions' in requested:
-        executed.append('proportions')
+    if 'pair_looking_time' in requested:
+        executed.append('pair_looking_time')
     start_code = code_manifest(PROJECT_ROOT, root)
     record = dict(run_id=run_id, status='running', started_utc=utc_now(), git=git_state(PROJECT_ROOT),
                   invocation=sys.argv, environment=environment(), requested_analyses=requested, executed_analyses=executed)
@@ -80,37 +77,33 @@ def main():
         write_csv(inventory, output/'source_inventory.csv')
         write_json(output/'input_manifest.json', manifests)
         print(f'Extracting looking time: {len(people)} participants...', flush=True)
-        trials, looking, metadata = extract_looking_time(inventory, config['rules'], output)
-        spatial_trials = spatial_people = None
-        ratios = {}
-        if 'spatial_roi' in executed:
-            print('Extracting left/right track dwell times...', flush=True)
-            spatial_trials, spatial_people = extract_spatial(trials, looking, metadata, config['rules'], output)
-        if 'proportions' in executed:
-            print('Calculating both configured trial-proportion denominators...', flush=True)
-            ratios = extract_proportions(spatial_trials, spatial_people, config['rules'], output)
+        trials, looking, _ = extract_looking_time(inventory, config['rules'], output)
+        pair_people = None
+        if 'pair_looking_time' in executed:
+            print('Exporting separate Pair 1 and Pair 2 looking times...', flush=True)
+            pair_people = extract_pair_looking_time(trials, looking, config['rules'], output)
         master = looking.copy()
-        if spatial_people is not None:
-            columns = [c for c in spatial_people if c not in META]
-            master = master.merge(spatial_people[['participant_id']+columns].rename(columns={c: 'spatial_'+c for c in columns}), on='participant_id', validate='one_to_one')
-        for name, table in ratios.items():
-            columns = [c for c in table if c not in META]
-            master = master.merge(table[['participant_id']+columns].rename(columns={c: 'prop_'+name+'_'+c for c in columns}), on='participant_id', validate='one_to_one')
+        pair_columns = []
+        if pair_people is not None:
+            pair_columns = [c for c in pair_people if c not in METADATA]
+            master = master.merge(pair_people[['participant_id']+pair_columns], on='participant_id', validate='one_to_one')
         write_csv(master, output/'analysis_ready.csv')
         readback = pd.read_csv(output/'analysis_ready.csv')
         require(readback.shape == master.shape and readback.participant_id.is_unique, 'Final CSV readback failed')
         pd.testing.assert_frame_equal(readback, master, check_dtype=False, check_exact=False, atol=1e-9, rtol=0)
-        dictionary = [{'column': c, 'dtype': str(master[c].dtype), 'source': 'spatial_roi' if c.startswith('spatial_') else 'proportions' if c.startswith('prop_') else 'looking_time_or_metadata'} for c in master]
+        dictionary = [{'column': c, 'dtype': str(master[c].dtype), 'source': 'pair_looking_time' if c in pair_columns else 'looking_time_or_metadata'} for c in master]
         write_json(output/'column_dictionary.json', dictionary)
-        checks = verify_results(trials, looking, spatial_trials, spatial_people, ratios)
+        checks = verify_results(trials, looking)
+        if pair_people is not None:
+            checks['pair_looking_time'] = verify_pair_results(trials, looking, pair_people)
         if args.reference_root:
-            checks['historical_regression'] = verify_reference(args.reference_root.resolve(), trials, looking, spatial_trials, spatial_people, ratios)
+            checks['historical_regression'] = verify_reference(args.reference_root.resolve(), trials, looking)
         verify_manifest(manifests)
         require(start_code == code_manifest(PROJECT_ROOT, root), 'Source code or configuration changed during run')
         checks['all_inputs_unchanged'] = True
         checks['all_code_unchanged'] = True
         write_json(output/'verification.json', checks)
-        write_audit(trials, looking, ratios, config, record, checks, output)
+        write_audit(trials, looking, {}, config, record, checks, output)
         record.update(status='success', finished_utc=utc_now(), verification=checks,
                       outputs=[{'path': p.name, 'sha256': sha256(p)} for p in sorted(output.iterdir()) if p.is_file() and p.name != 'run_record.json'])
         write_json(output/'run_record.json', record)

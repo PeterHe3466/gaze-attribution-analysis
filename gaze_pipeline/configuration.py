@@ -23,7 +23,7 @@ def load_config(path, project_root, supported_analyses=None, *, paths):
     require(set(paths) == {'data_root', 'order_file', 'output_root'}, 'Unknown or missing main.py path setting')
     analyses = config['analyses']
     require(bool(analyses) and len(analyses) == len(set(analyses)), 'Select at least one analysis without duplicates')
-    allowed = supported_analyses if supported_analyses is not None else {'looking_time', 'spatial_roi', 'proportions'}
+    allowed = supported_analyses if supported_analyses is not None else {'looking_time', 'pair_looking_time'}
     require(set(analyses) <= set(allowed), 'Unknown analysis name')
     r = config['rules']
     expected = {'validation_start_ms', 'validation_end_ms', 'validation_threshold', 'measurement_start_ms',

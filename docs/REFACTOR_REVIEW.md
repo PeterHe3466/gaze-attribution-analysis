@@ -1,6 +1,6 @@
 # Script review and refactoring record
 
-The selected scope is the latest whole-screen looking-time extraction, left/right track ROI dwell and both proportion denominators. Pupil-change analysis is deferred.
+The initial migration included whole-screen looking time, left/right track ROI dwell and both proportion denominators. The current entry point focuses on whole-screen looking time and separate Pair 1/Pair 2 exports. Track ROI and proportion modules/settings are retained for later work but disconnected from main.py. Pupil-change analysis remains deferred.
 
 ## Older scripts and their roles
 
@@ -23,7 +23,8 @@ The newer dated runs already contained parameters, input hashes, algorithm check
 - `main.py` is the single entry point. Historical result directories are optional verification references, not calculation inputs.
 - Root-level `config.json` supplies parameters and adjacent `_description...` explanations. Documentation is supplementary. Input, order-reference and output paths are defined at the top of `main.py`.
 - Historical timing branches are preserved with explicit rule arguments, removing runtime AST/exec and missing-configuration dependencies.
-- Whole-screen timing returns structured accepted segments; track extraction uses these directly instead of parsing logs.
+- Whole-screen timing returns structured accepted segments. The retained, deferred track module can consume these instead of parsing logs.
+- `pair_looking_time.py` exports each pair's New/Old first/total durations from the existing trial table and metric-specific retention flags, without recalculating timing. The existing across-pair means are preserved and checked against the separate pair values.
 - The pipeline reads post-processed single-trial CSVs without writing new `_ready.csv` files into the input directory or changing measured values.
 - Feature extraction is separate from inferential testing and plotting.
 - `Analysis output` contains the latest combined CSV and concise audit. Component tables and complete run copies, including hashes, settings, environment and Git state, are retained in `details/<run ID>/`.
@@ -35,9 +36,9 @@ Input checks reject duplicate trials, ambiguous order matching, stimulus/partici
 
 Current inputs contain 58 participants; historical reference tables contain 53. With `--reference-root ../Codex`:
 
-- Compare whole-screen first/total outcomes, validation and pair decisions, spatial trial/participant tables and both proportion participant tables for the overlapping 53 participants.
+- Compare whole-screen first/total outcomes, validation and pair decisions for the overlapping 53 participants. Current main.py runs no track ROI/proportion comparisons; their previous results remain in older snapshots.
 - Use absolute tolerance `1e-9`, relative tolerance zero, and compare missing positions and categorical labels.
-- Explicitly count rows without a historical reference. New participants still undergo input, timing/spatial accounting, pair-mean and proportion-range checks.
+- Explicitly count rows without a historical reference. All current participants undergo input checks and separate-pair/trial/mean agreement checks.
 - Matching saved results establishes preservation of their computation behavior; it does not independently validate every scientific method choice.
 
 Each run's `verification.json` contains its detailed checks. A past report does not establish that a later code change is correct.
